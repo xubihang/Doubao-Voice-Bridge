@@ -1,6 +1,6 @@
 {
   "launchAtLogin": false,
-  "restoreDelay": 0.2,
+  "restoreDelay": 0.75,
   "postSwitchSettleDelay": 0.5,
   "switchWaitTimeout": 2.0,
   "switchPollInterval": 0.05,

@@ -26,4 +26,5 @@ final class HotkeyEventPlanTests: XCTestCase {
 
         XCTAssertEqual(rawFlags, 0x100000 | 0x20000 | 0x10 | 0x4)
     }
+
 }

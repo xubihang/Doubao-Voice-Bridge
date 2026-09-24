@@ -9,12 +9,19 @@ import Foundation
 public enum DoubaoImeVoiceStrategy: Equatable, Sendable {
     case holdHotkey
     case tapHotkey
+    case warmupHoldHotkey
 
     public static func resolve(versionString: String?) -> DoubaoImeVoiceStrategy {
         guard let version = SemanticVersion(versionString) else {
+            return .warmupHoldHotkey
+        }
+        if version >= SemanticVersion(1, 0, 1) {
             return .holdHotkey
         }
-        return version >= SemanticVersion(0, 9, 2) ? .tapHotkey : .holdHotkey
+        if version >= SemanticVersion(0, 9, 2) {
+            return .tapHotkey
+        }
+        return .warmupHoldHotkey
     }
 }
 

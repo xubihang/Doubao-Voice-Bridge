@@ -381,7 +381,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             releaseOptionIfNeeded()
         }
         if actions.contains(.restorePreviousInputMethod) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + config.restoreDelay) { [weak self] in
+            let restoreDelay = config.restoreDelay
+            logger.log("voice hotkey key-up sent; restore input method after \(restoreDelay)s")
+            DispatchQueue.main.asyncAfter(deadline: .now() + restoreDelay) { [weak self] in
                 self?.restorePreviousInputMethod()
             }
         }
@@ -476,10 +478,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startVoiceTriggerIfCurrent(_ currentSession: UUID) {
         switch voiceStrategy {
         case .holdHotkey:
-            startOptionWarmupIfCurrent(currentSession)
+            holdVoiceHotkeyIfCurrent(currentSession)
         case .tapHotkey:
             tapVoiceHotkeyIfCurrent(currentSession)
+        case .warmupHoldHotkey:
+            startOptionWarmupIfCurrent(currentSession)
         }
+    }
+
+    private func holdVoiceHotkeyIfCurrent(_ currentSession: UUID) {
+        guard sessionID == currentSession, triggerHotkeyDown else {
+            logger.log("holdVoiceHotkeyIfCurrent skipped: session mismatch or trigger not down")
+            return
+        }
+        logger.log("voice hotkey hold until trigger hotkey release")
+        voiceHotkeySender.down()
+        voiceHotkeyIsDown = true
+        machine.handle(.optionHoldStarted)
     }
 
     private func startOptionWarmupIfCurrent(_ currentSession: UUID) {
@@ -571,6 +586,8 @@ private extension DoubaoImeVoiceStrategy {
             return "holdHotkey"
         case .tapHotkey:
             return "tapHotkey"
+        case .warmupHoldHotkey:
+            return "warmupHoldHotkey"
         }
     }
 }

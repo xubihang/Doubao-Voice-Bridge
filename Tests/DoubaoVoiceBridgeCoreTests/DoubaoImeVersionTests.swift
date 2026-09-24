@@ -1,27 +1,32 @@
 /**
  * [INPUT]: 依赖 XCTest 的断言能力，依赖 DoubaoVoiceBridgeCore 的豆包版本探测与策略选择
  * [OUTPUT]: 对外提供 DoubaoImeVersionDetector 与 DoubaoImeVoiceStrategy 的行为回归测试
- * [POS]: Tests/DoubaoVoiceBridgeCoreTests 的版本协议测试，保护 0.9.2 前后触发策略分流
+ * [POS]: Tests/DoubaoVoiceBridgeCoreTests 的版本协议测试，保护 0.9.2 与 1.0.1 两个触发策略边界
  * [PROTOCOL]: 变更时更新此头部，然后检查 codex.md
  */
 import XCTest
 @testable import DoubaoVoiceBridgeCore
 
 final class DoubaoImeVersionTests: XCTestCase {
-    func testVersionsBeforeZeroNineTwoUseLegacyHoldTrigger() {
-        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.9.1"), .holdHotkey)
-        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.8.9"), .holdHotkey)
+    func testVersionsBeforeZeroNineTwoUseLegacyWarmupHoldTrigger() {
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.9.1"), .warmupHoldHotkey)
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.8.9"), .warmupHoldHotkey)
     }
 
-    func testZeroNineTwoAndLaterUseTapTrigger() {
+    func testVersionsFromZeroNineTwoThroughOneZeroZeroUseTapTrigger() {
         XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.9.2"), .tapHotkey)
         XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "0.10.0"), .tapHotkey)
         XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "1.0.0"), .tapHotkey)
     }
 
-    func testUnknownVersionFallsBackToLegacyHoldTrigger() {
-        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: nil), .holdHotkey)
-        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "bad-version"), .holdHotkey)
+    func testOneZeroOneAndLaterHoldVoiceHotkeyUntilTriggerRelease() {
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "1.0.1"), .holdHotkey)
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "1.1.0"), .holdHotkey)
+    }
+
+    func testUnknownVersionFallsBackToLegacyWarmupHoldTrigger() {
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: nil), .warmupHoldHotkey)
+        XCTAssertEqual(DoubaoImeVoiceStrategy.resolve(versionString: "bad-version"), .warmupHoldHotkey)
     }
 
     func testDetectorReadsFirstExistingDoubaoBundleVersion() throws {

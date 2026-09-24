@@ -176,7 +176,7 @@ public struct BridgeConfig: Equatable, Sendable {
 
     public static let `default` = BridgeConfig(
         launchAtLogin: false,
-        restoreDelay: 0.20,
+        restoreDelay: 0.75,
         postSwitchSettleDelay: 0.50,
         switchWaitTimeout: 2.00,
         switchPollInterval: 0.05,
@@ -299,7 +299,7 @@ public struct BridgeConfig: Equatable, Sendable {
         """
         {
           "launchAtLogin": false,
-          "restoreDelay": 0.2,
+          "restoreDelay": 0.75,
           "postSwitchSettleDelay": 0.5,
           "switchWaitTimeout": 2.0,
           "switchPollInterval": 0.05,

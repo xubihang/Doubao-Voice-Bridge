@@ -15,7 +15,7 @@ final class BridgeConfigTests: XCTestCase {
         XCTAssertFalse(configurableFields.contains("targetInputMethod"))
         XCTAssertFalse(configurableFields.contains("userInputMethod"))
         XCTAssertFalse(config.launchAtLogin)
-        XCTAssertEqual(config.restoreDelay, 0.20)
+        XCTAssertEqual(config.restoreDelay, 0.75)
         XCTAssertEqual(config.postSwitchSettleDelay, 0.50)
         XCTAssertEqual(config.switchWaitTimeout, 2.00)
         XCTAssertEqual(config.focusBounceBackDelay, 0.16)
