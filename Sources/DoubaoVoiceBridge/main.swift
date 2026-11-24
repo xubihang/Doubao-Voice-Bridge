@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 AppKit/ApplicationServices/Carbon 的菜单栏、权限、事件 tap 与焦点控制能力，依赖 DoubaoVoiceBridgeCore 的配置、状态机、输入法与版本策略
- * [OUTPUT]: 对外提供 DoubaoVoiceBridge 菜单栏进程入口和本地按住说话桥接流程
+ * [OUTPUT]: 对外提供菜单栏入口、按住说话桥接及恢复输入法后的焦点切换
  * [POS]: Sources/DoubaoVoiceBridge 的唯一可执行入口，编排权限、LaunchAgent、输入法切换、豆包语音触发与恢复
  * [PROTOCOL]: 变更时更新此头部，然后检查 codex.md
  */
@@ -382,9 +382,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if actions.contains(.restorePreviousInputMethod) {
             let restoreDelay = config.restoreDelay
+            let releasedSession = sessionID
+            let originalApp = NSWorkspace.shared.frontmostApplication
+            let originalWindow = FocusBouncer.focusedWindow(for: originalApp)
+            let finishMarkedText = actions.contains(.finishMarkedText)
             logger.log("voice hotkey key-up sent; restore input method after \(restoreDelay)s")
             DispatchQueue.main.asyncAfter(deadline: .now() + restoreDelay) { [weak self] in
-                self?.restorePreviousInputMethod()
+                guard let self, self.sessionID == releasedSession else { return }
+                self.restorePreviousInputMethod()
+                guard finishMarkedText, let originalApp,
+                      originalApp.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+                      NSWorkspace.shared.frontmostApplication?.processIdentifier == originalApp.processIdentifier else {
+                    return
+                }
+                self.logger.log("finish marked text with focus bounce")
+                self.focusBouncer.bounce(
+                    originalApp: originalApp,
+                    originalWindow: originalWindow,
+                    backDelay: self.config.focusBounceBackDelay,
+                    settleDelay: self.config.focusBounceSettleDelay,
+                    shouldReturn: { [weak self] in
+                        self?.sessionID == releasedSession &&
+                            NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+                    }
+                ) {}
             }
         }
     }
@@ -442,8 +463,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let originalApp = NSWorkspace.shared.frontmostApplication
         let originalWindow = FocusBouncer.focusedWindow(for: originalApp)
         let currentInput = inputSources.currentInputSourceName()
-        inputMethodToRestore = currentInput
-        logger.log("record original input source: \(currentInput)")
+        if inputMethodToRestore == nil {
+            inputMethodToRestore = currentInput
+            logger.log("record original input source: \(currentInput)")
+        } else {
+            logger.log("retain original input source: \(inputMethodToRestore ?? currentInput)")
+        }
         logger.log("switch to doubao input source: \(doubaoInputMethodName)")
 
         // TIS APIs (selectInputSource, TISCreateInputSourceList) must be called
@@ -1153,10 +1178,12 @@ private final class FocusBouncer {
         originalWindow: AXUIElement?,
         backDelay: TimeInterval,
         settleDelay: TimeInterval,
+        shouldReturn: @escaping () -> Bool = { true },
         completion: @escaping () -> Void
     ) {
         activateNeutralApp(excluding: originalApp)
         DispatchQueue.main.asyncAfter(deadline: .now() + backDelay) {
+            guard shouldReturn() else { return }
             originalApp?.activate(options: [.activateIgnoringOtherApps])
             if let originalWindow {
                 AXUIElementSetAttributeValue(originalWindow, kAXMainAttribute as CFString, kCFBooleanTrue)

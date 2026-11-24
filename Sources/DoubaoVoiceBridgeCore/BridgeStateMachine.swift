@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 Foundation 的 Sendable 基础类型
- * [OUTPUT]: 对外提供 BridgeState、BridgeEvent、BridgeAction、BridgeStateMachine
+ * [OUTPUT]: 对外提供会话状态、事件及语音释放、输入法恢复和结束待编辑文本的动作
  * [POS]: DoubaoVoiceBridgeCore 的会话状态核心，被菜单栏主程序驱动输入法切换与语音触发
  * [PROTOCOL]: 变更时更新此头部，然后检查 codex.md
  */
@@ -28,6 +28,7 @@ public enum BridgeAction: Equatable, Sendable {
     case cancelPendingOptionHold
     case releaseOptionHold
     case restorePreviousInputMethod
+    case finishMarkedText
 }
 
 public struct BridgeStateMachine: Sendable {
@@ -60,10 +61,10 @@ public struct BridgeStateMachine: Sendable {
             return [.cancelPendingOptionHold, .restorePreviousInputMethod]
         case (.holdingOption, .rightCommandUp):
             state = .idle
-            return [.releaseOptionHold, .restorePreviousInputMethod]
+            return [.releaseOptionHold, .restorePreviousInputMethod, .finishMarkedText]
         case (.tapVoiceActive, .rightCommandUp):
             state = .idle
-            return [.restorePreviousInputMethod]
+            return [.restorePreviousInputMethod, .finishMarkedText]
         case (_, .reset):
             state = .idle
             return []

@@ -50,7 +50,7 @@ final class BridgeStateMachineTests: XCTestCase {
         _ = machine.handle(.optionHoldStarted)
         let actions = machine.handle(.rightCommandUp)
 
-        XCTAssertEqual(actions, [.releaseOptionHold, .restorePreviousInputMethod])
+        XCTAssertEqual(actions, [.releaseOptionHold, .restorePreviousInputMethod, .finishMarkedText])
         XCTAssertEqual(machine.state, .idle)
     }
 
@@ -62,7 +62,7 @@ final class BridgeStateMachineTests: XCTestCase {
         _ = machine.handle(.tapVoiceTriggerSent)
         let actions = machine.handle(.rightCommandUp)
 
-        XCTAssertEqual(actions, [.restorePreviousInputMethod])
+        XCTAssertEqual(actions, [.restorePreviousInputMethod, .finishMarkedText])
         XCTAssertEqual(machine.state, .idle)
     }
 }
